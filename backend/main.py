@@ -14,6 +14,15 @@ ARTIFACT_DIR = os.getenv("ARTIFACT_DIR", "artifacts")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 
 
+def parse_allowed_origins(raw: str) -> List[str]:
+    origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    return origins or ["*"]
+
+
+origins = parse_allowed_origins(ALLOWED_ORIGINS)
+allow_all_origins = "*" in origins
+
+
 class PredictRequest(BaseModel):
     symptoms: List[str] = Field(..., min_length=1, max_length=30)
 
@@ -39,8 +48,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS.split(",")],
-    allow_credentials=True,
+    allow_origins=origins,
+    # Browsers reject credentialed CORS with wildcard origin, so disable it for '*'.
+    allow_credentials=not allow_all_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -57,6 +67,14 @@ def root():
         "status": "ok",
         "service": "disease-prediction-api",
         "disclaimer": "This is not a medical diagnosis system.",
+    }
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "artifacts_loaded": engine is not None,
     }
 
 

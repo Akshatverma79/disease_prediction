@@ -66,3 +66,4 @@ pnpm-debug.log*
 
 # ML Artifacts (optional - exclude if these are large)
 # backend/artifacts/
+DEPLOYMENT.md
